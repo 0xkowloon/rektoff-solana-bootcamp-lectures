@@ -156,6 +156,7 @@ pub mod account_4 {
             collection_name,
             collection_id
         );
+        require!(ctx.accounts.collection_authority.can_mint == 1, ErrorCode::NotMintable);
         Ok(())
     }
 
@@ -204,4 +205,7 @@ pub mod account_4 {
 pub enum ErrorCode {
     #[msg("Insufficient balance")]
     InsufficientBalance,
+
+    #[msg("Not mintable")]
+    NotMintable,
 }

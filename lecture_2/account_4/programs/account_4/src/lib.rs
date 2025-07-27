@@ -241,11 +241,11 @@ pub mod account_4 {
         vault_name: String,
         amount: u64,
     ) -> Result<()> {
-        let vault = &mut ctx.accounts.user_vault;
+        let user_vault = &mut ctx.accounts.user_vault;
+        let vault_authority = &mut ctx.accounts.vault_authority;
 
-        require!(vault.balance >= amount, ErrorCode::InsufficientBalance);
-
-        vault.balance -= amount;
+        vault_authority.balance = vault_authority.balance.checked_sub(amount).ok_or(ErrorCode::InsufficientBalance);
+        user_vault.balance = user_vault.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow);
 
         msg!(
             "Withdrew {} tokens from vault '{}' for user {}",

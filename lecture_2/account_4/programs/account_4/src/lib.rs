@@ -9,6 +9,7 @@ pub mod account_4 {
     // Account structures
     #[account]
     pub struct CollectionAuthority {
+        pub authority: Pubkey,
         pub collection_id: u64,
         pub collection_name: String,
         pub can_mint: u64,
@@ -28,7 +29,7 @@ pub mod account_4 {
         #[account(
             init,
             payer = payer,
-            space = 8 + 8 + 4 + collection_name.len() + 8,
+            space = 8 + 32 + 8 + 4 + collection_name.len() + 8,
             seeds = [
                 b"authority",
                 collection_id.to_le_bytes().as_ref(),
@@ -39,6 +40,18 @@ pub mod account_4 {
         pub collection_authority: Account<'info, CollectionAuthority>,
         #[account(mut)]
         pub payer: Signer<'info>,
+        pub system_program: Program<'info, System>,
+    }
+
+    #[derive(Accounts)]
+    pub struct ToggleCollectionMinting<'info> {
+        #[account(
+            mut,
+            has_one = authority,
+        )]
+        pub collection_authority: Account<'info, CollectionAuthority>,
+        #[account(mut)]
+        pub authority: Signer<'info>,
         pub system_program: Program<'info, System>,
     }
 
@@ -145,13 +158,23 @@ pub mod account_4 {
     // Program instructions
     pub fn initialize_collection_authority(
         ctx: Context<InitializeCollectionAuthority>,
+        authority: Pubkey,
         collection_id: u64,
         collection_name: String,
     ) -> Result<()> {
         let authority = &mut ctx.accounts.collection_authority;
+        authority.authority = authority;
         authority.collection_id = collection_id;
         authority.collection_name = collection_name;
         authority.can_mint = 1;
+        Ok(())
+    }
+
+    pub fn toggle_collection_minting(
+        ctx: Context<ToggleCollectionMinting>,
+    ) -> Result<()> {
+        let authority = &mut ctx.accounts.collection_authority;
+        authority.can_mint = 1 - authority.can_mint;
         Ok(())
     }
 

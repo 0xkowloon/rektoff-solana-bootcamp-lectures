@@ -111,7 +111,9 @@ pub mod account_4 {
         )]
         pub user_vault: Account<'info, UserVault>,
         #[account(
-            mut,
+            init_if_needed,
+            payer = user,
+            space = 8 + 32 + 4 + vault_name.len() + 8,
             has_one = user,
             seeds = [
                 b"authority",
@@ -219,9 +221,11 @@ pub mod account_4 {
         vault_name: String,
         amount: u64,
     ) -> Result<()> {
-        let vault = &mut ctx.accounts.user_vault;
+        let user_vault = &mut ctx.accounts.user_vault;
+        let vault_authority = &mut ctx.accounts.vault_authority;
 
-        vault.balance += amount;
+        user_vault.balance = user_vault.balance.checked_sub(amount).ok_or(ErrorCode::InsufficientBalance);
+        vault_authority.balance = vault_authority.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow);
 
         msg!(
             "Deposited {} tokens to vault '{}' for user {}",
@@ -257,6 +261,9 @@ pub mod account_4 {
 pub enum ErrorCode {
     #[msg("Insufficient balance")]
     InsufficientBalance,
+
+    #[msg("Math overflow")]
+    MathOverflow,
 
     #[msg("Not mintable")]
     NotMintable,

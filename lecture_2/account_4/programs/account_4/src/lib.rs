@@ -16,7 +16,7 @@ pub mod account_4 {
 
     #[account]
     pub struct UserVault {
-        pub user_id: u64,
+        pub user: Pubkey,
         pub vault_name: String,
         pub balance: u64,
     }
@@ -30,7 +30,7 @@ pub mod account_4 {
             payer = payer,
             space = 8 + 8 + 4 + collection_name.len() + 8,
             seeds = [
-                b"authority", 
+                b"authority",
                 collection_id.to_le_bytes().as_ref(),
                 collection_name.as_bytes()
             ],
@@ -43,15 +43,15 @@ pub mod account_4 {
     }
 
     #[derive(Accounts)]
-    #[instruction(user_id: u64, vault_name: String)]
+    #[instruction(user: Pubkey, vault_name: String)]
     pub struct InitializeUserVault<'info> {
         #[account(
             init,
             payer = payer,
-            space = 8 + 8 + 4 + vault_name.len() + 8,
+            space = 8 + 32 + 4 + vault_name.len() + 8,
             seeds = [
-                b"user_vault", 
-                user_id.to_le_bytes().as_ref(),
+                b"user_vault",
+                user.to_le_bytes().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -67,28 +67,16 @@ pub mod account_4 {
     pub struct MintNft<'info> {
         #[account(
             seeds = [
-                b"authority", 
+                b"authority",
                 collection_id.to_le_bytes().as_ref(),
                 collection_name.as_bytes()
             ],
             bump
         )]
         pub collection_authority: Account<'info, CollectionAuthority>,
-        #[account(mut)]
-        pub minter: Signer<'info>,
-    }
-
-    #[derive(Accounts)]
-    #[instruction(user_id: u64, vault_name: String)]
-    pub struct DepositToVault<'info> {
         #[account(
             mut,
-            seeds = [
-                b"user_vault", 
-                user_id.to_le_bytes().as_ref(),
-                vault_name.as_bytes()
-            ],
-            bump
+            has_one = user,
         )]
         pub user_vault: Account<'info, UserVault>,
         #[account(mut)]
@@ -96,22 +84,55 @@ pub mod account_4 {
     }
 
     #[derive(Accounts)]
-    #[instruction(user_id: u64, vault_name: String)]
-    pub struct WithdrawFromVault<'info> {
+    #[instruction(vault_name: String)]
+    pub struct DepositToVault<'info> {
         #[account(
             mut,
+            has_one = user,
             seeds = [
-                b"user_vault", 
-                user_id.to_le_bytes().as_ref(),
+                b"user_vault",
+                user.to_le_bytes().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
         )]
         pub user_vault: Account<'info, UserVault>,
         #[account(
+            mut,
+            has_one = user,
             seeds = [
-                b"authority", 
-                user_id.to_le_bytes().as_ref(),
+                b"authority",
+                user.to_le_bytes().as_ref(),
+                vault_name.as_bytes()
+            ],
+            bump
+        )]
+        pub vault_authority: Account<'info, UserVault>,
+
+        #[account(mut)]
+        pub user: Signer<'info>,
+    }
+
+    #[derive(Accounts)]
+    #[instruction(vault_name: String)]
+    pub struct WithdrawFromVault<'info> {
+        #[account(
+            mut,
+            has_one = user,
+            seeds = [
+                b"user_vault",
+                user.to_le_bytes().as_ref(),
+                vault_name.as_bytes()
+            ],
+            bump
+        )]
+        pub user_vault: Account<'info, UserVault>,
+        #[account(
+            mut,
+            has_one = user,
+            seeds = [
+                b"authority",
+                user.to_le_bytes().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -136,11 +157,11 @@ pub mod account_4 {
 
     pub fn initialize_user_vault(
         ctx: Context<InitializeUserVault>,
-        user_id: u64,
+        user: Pubkey,
         vault_name: String,
     ) -> Result<()> {
         let vault = &mut ctx.accounts.user_vault;
-        vault.user_id = user_id;
+        vault.user = user;
         vault.vault_name = vault_name;
         vault.balance = 0;
         Ok(())
@@ -162,7 +183,6 @@ pub mod account_4 {
 
     pub fn deposit_to_vault(
         ctx: Context<DepositToVault>,
-        user_id: u64,
         vault_name: String,
         amount: u64,
     ) -> Result<()> {
@@ -181,7 +201,6 @@ pub mod account_4 {
 
     pub fn withdraw_from_vault(
         ctx: Context<WithdrawFromVault>,
-        user_id: u64,
         vault_name: String,
         amount: u64,
     ) -> Result<()> {
@@ -208,4 +227,10 @@ pub enum ErrorCode {
 
     #[msg("Not mintable")]
     NotMintable,
+
+    #[msg("Unauthorized")]
+    Unauthorized,
+
+    #[msg("Vault user mismatch")]
+    VaultUserMismatch,
 }

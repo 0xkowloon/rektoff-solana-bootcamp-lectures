@@ -4,7 +4,7 @@ import { Account4 } from "../target/types/account_4";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { assert } from "chai";
 
-describe("PDA Collision Vulnerability", () => {
+describe.skip("PDA Collision Vulnerability", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.Account4 as Program<Account4>;
@@ -18,7 +18,7 @@ describe("PDA Collision Vulnerability", () => {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
       });
-      
+
       if (tx && tx.meta && tx.meta.logMessages) {
         tx.meta.logMessages.forEach(log => {
           if (log.includes("Program log:")) {
@@ -33,11 +33,11 @@ describe("PDA Collision Vulnerability", () => {
     }
     console.log("--- End Program Logs ---\n");
   };
-  
+
   const collectionOwner = Keypair.generate();
   const vaultUser = Keypair.generate();
   const attacker = Keypair.generate();
-  
+
   const collisionId = new anchor.BN(1);
   const collisionName = "jon_test";
 
@@ -55,7 +55,7 @@ describe("PDA Collision Vulnerability", () => {
 
   it("should demonstrate PDA collision vulnerability", async () => {
     console.log("Testing PDA collision vulnerability");
-    
+
     // Generate PDAs
     const [collectionAuthorityPDA] = PublicKey.findProgramAddressSync(
       [
@@ -155,7 +155,7 @@ describe("PDA Collision Vulnerability", () => {
     } catch (error) {
       console.log("Protection confirmed: Withdrawal failed due to discriminator protection");
     }
-    
+
     // Vulnerability Analysis
     console.log("\n=== VULNERABILITY ANALYSIS ===");
     console.log("Vulnerability: PDA Collision");

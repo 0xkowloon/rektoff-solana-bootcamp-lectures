@@ -75,7 +75,7 @@ pub mod account_4 {
     }
 
     #[derive(Accounts)]
-    #[instruction(collection_id: u64, collection_name: String)]
+    #[instruction(user: Pubkey, collection_id: u64, collection_name: String)]
     pub struct MintNft<'info> {
         #[account(
             seeds = [
@@ -97,7 +97,7 @@ pub mod account_4 {
         )]
         pub user_vault: Account<'info, UserVault>,
         #[account(mut)]
-        pub user: Signer<'info>,
+        pub payer: Signer<'info>,
     }
 
     #[derive(Accounts)]
@@ -116,7 +116,7 @@ pub mod account_4 {
         #[account(
             init_if_needed,
             payer = user,
-            space = 8 + 32 + 4 + vault_name.len() + 8,
+            space = 8 + 4 + vault_name.len() + 8,
             seeds = [
                 b"authority",
                 user.key().as_ref(),
@@ -162,9 +162,9 @@ pub mod account_4 {
     // Program instructions
     pub fn initialize_collection_authority(
         ctx: Context<InitializeCollectionAuthority>,
-        authority: Pubkey,
         collection_id: u64,
         collection_name: String,
+        authority: Pubkey,
     ) -> Result<()> {
         let collection_authority = &mut ctx.accounts.collection_authority;
         collection_authority.authority = authority;
@@ -184,6 +184,7 @@ pub mod account_4 {
 
     pub fn initialize_user_vault(
         ctx: Context<InitializeUserVault>,
+        user: Pubkey,
         vault_name: String,
     ) -> Result<()> {
         let vault = &mut ctx.accounts.user_vault;
@@ -194,6 +195,7 @@ pub mod account_4 {
 
     pub fn mint_nft(
         ctx: Context<MintNft>,
+        user: Pubkey,
         collection_id: u64,
         collection_name: String,
     ) -> Result<()> {
@@ -267,10 +269,4 @@ pub enum ErrorCode {
 
     #[msg("Not mintable")]
     NotMintable,
-
-    #[msg("Unauthorized")]
-    Unauthorized,
-
-    #[msg("Vault user mismatch")]
-    VaultUserMismatch,
 }

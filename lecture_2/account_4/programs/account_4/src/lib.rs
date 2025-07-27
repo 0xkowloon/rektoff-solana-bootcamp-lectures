@@ -63,7 +63,7 @@ pub mod account_4 {
             space = 8 + 4 + vault_name.len() + 8,
             seeds = [
                 b"user_vault",
-                user.to_le_bytes().as_ref(),
+                user.key().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -90,7 +90,7 @@ pub mod account_4 {
             mut,
             seeds = [
                 b"user_vault",
-                user.to_le_bytes().as_ref(),
+                user.key().as_ref(),
                 collection_name.as_bytes()
             ],
             bump
@@ -107,7 +107,7 @@ pub mod account_4 {
             mut,
             seeds = [
                 b"user_vault",
-                user.to_le_bytes().as_ref(),
+                user.key().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -119,7 +119,7 @@ pub mod account_4 {
             space = 8 + 32 + 4 + vault_name.len() + 8,
             seeds = [
                 b"authority",
-                user.to_le_bytes().as_ref(),
+                user.key().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -128,6 +128,8 @@ pub mod account_4 {
 
         #[account(mut)]
         pub user: Signer<'info>,
+
+        pub system_program: Program<'info, System>,
     }
 
     #[derive(Accounts)]
@@ -137,7 +139,7 @@ pub mod account_4 {
             mut,
             seeds = [
                 b"user_vault",
-                user.to_le_bytes().as_ref(),
+                user.key().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -147,7 +149,7 @@ pub mod account_4 {
             mut,
             seeds = [
                 b"authority",
-                user.to_le_bytes().as_ref(),
+                user.key().as_ref(),
                 vault_name.as_bytes()
             ],
             bump
@@ -164,11 +166,11 @@ pub mod account_4 {
         collection_id: u64,
         collection_name: String,
     ) -> Result<()> {
-        let authority = &mut ctx.accounts.collection_authority;
-        authority.authority = authority;
-        authority.collection_id = collection_id;
-        authority.collection_name = collection_name;
-        authority.can_mint = 1;
+        let collection_authority = &mut ctx.accounts.collection_authority;
+        collection_authority.authority = authority;
+        collection_authority.collection_id = collection_id;
+        collection_authority.collection_name = collection_name;
+        collection_authority.can_mint = 1;
         Ok(())
     }
 
@@ -182,7 +184,6 @@ pub mod account_4 {
 
     pub fn initialize_user_vault(
         ctx: Context<InitializeUserVault>,
-        user: Pubkey,
         vault_name: String,
     ) -> Result<()> {
         let vault = &mut ctx.accounts.user_vault;
@@ -223,14 +224,14 @@ pub mod account_4 {
         let user_vault = &mut ctx.accounts.user_vault;
         let vault_authority = &mut ctx.accounts.vault_authority;
 
-        user_vault.balance = user_vault.balance.checked_sub(amount).ok_or(ErrorCode::InsufficientBalance);
-        vault_authority.balance = vault_authority.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow);
+        user_vault.balance = user_vault.balance.checked_sub(amount).ok_or(ErrorCode::InsufficientBalance)?;
+        vault_authority.balance = vault_authority.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow)?;
 
         msg!(
             "Deposited {} tokens to vault '{}' for user {}",
             amount,
             vault_name,
-            user_id
+            &ctx.accounts.user.key()
         );
         Ok(())
     }
@@ -243,14 +244,14 @@ pub mod account_4 {
         let user_vault = &mut ctx.accounts.user_vault;
         let vault_authority = &mut ctx.accounts.vault_authority;
 
-        vault_authority.balance = vault_authority.balance.checked_sub(amount).ok_or(ErrorCode::InsufficientBalance);
-        user_vault.balance = user_vault.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow);
+        vault_authority.balance = vault_authority.balance.checked_sub(amount).ok_or(ErrorCode::InsufficientBalance)?;
+        user_vault.balance = user_vault.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow)?;
 
         msg!(
             "Withdrew {} tokens from vault '{}' for user {}",
             amount,
             vault_name,
-            user_id
+            &ctx.accounts.user.key()
         );
         Ok(())
     }

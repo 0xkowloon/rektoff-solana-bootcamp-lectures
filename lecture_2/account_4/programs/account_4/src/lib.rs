@@ -90,6 +90,12 @@ pub mod account_4 {
         #[account(
             mut,
             has_one = user,
+            seeds = [
+                b"user_vault",
+                user.to_le_bytes().as_ref(),
+                collection_name.as_bytes()
+            ],
+            bump
         )]
         pub user_vault: Account<'info, UserVault>,
         #[account(mut)]

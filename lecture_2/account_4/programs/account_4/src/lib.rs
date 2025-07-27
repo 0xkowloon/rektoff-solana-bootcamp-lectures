@@ -17,7 +17,6 @@ pub mod account_4 {
 
     #[account]
     pub struct UserVault {
-        pub user: Pubkey,
         pub vault_name: String,
         pub balance: u64,
     }
@@ -61,7 +60,7 @@ pub mod account_4 {
         #[account(
             init,
             payer = payer,
-            space = 8 + 32 + 4 + vault_name.len() + 8,
+            space = 8 + 4 + vault_name.len() + 8,
             seeds = [
                 b"user_vault",
                 user.to_le_bytes().as_ref(),
@@ -89,7 +88,6 @@ pub mod account_4 {
         pub collection_authority: Account<'info, CollectionAuthority>,
         #[account(
             mut,
-            has_one = user,
             seeds = [
                 b"user_vault",
                 user.to_le_bytes().as_ref(),
@@ -107,7 +105,6 @@ pub mod account_4 {
     pub struct DepositToVault<'info> {
         #[account(
             mut,
-            has_one = user,
             seeds = [
                 b"user_vault",
                 user.to_le_bytes().as_ref(),
@@ -120,7 +117,6 @@ pub mod account_4 {
             init_if_needed,
             payer = user,
             space = 8 + 32 + 4 + vault_name.len() + 8,
-            has_one = user,
             seeds = [
                 b"authority",
                 user.to_le_bytes().as_ref(),
@@ -139,7 +135,6 @@ pub mod account_4 {
     pub struct WithdrawFromVault<'info> {
         #[account(
             mut,
-            has_one = user,
             seeds = [
                 b"user_vault",
                 user.to_le_bytes().as_ref(),
@@ -150,7 +145,6 @@ pub mod account_4 {
         pub user_vault: Account<'info, UserVault>,
         #[account(
             mut,
-            has_one = user,
             seeds = [
                 b"authority",
                 user.to_le_bytes().as_ref(),
@@ -192,7 +186,6 @@ pub mod account_4 {
         vault_name: String,
     ) -> Result<()> {
         let vault = &mut ctx.accounts.user_vault;
-        vault.user = user;
         vault.vault_name = vault_name;
         vault.balance = 0;
         Ok(())

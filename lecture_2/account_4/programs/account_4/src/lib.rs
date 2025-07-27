@@ -201,6 +201,16 @@ pub mod account_4 {
             collection_id
         );
         require!(ctx.accounts.collection_authority.can_mint == 1, ErrorCode::NotMintable);
+
+        let vault = &mut ctx.accounts.user_vault;
+        vault.balance += 1;
+
+        msg!(
+            "Minted NFT for collection {} with ID {}",
+            collection_name,
+            collection_id
+        );
+
         Ok(())
     }
 
